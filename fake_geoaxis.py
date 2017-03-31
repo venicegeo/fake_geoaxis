@@ -17,7 +17,7 @@ from pprint import pprint
 
 import flask
 
-PORT = 5001
+PORT = int(os.getenv('PORT', 5001))
 SSL_CERT = os.getenv('SSL_CERT')
 SSL_KEY = os.getenv('SSL_KEY')
 
