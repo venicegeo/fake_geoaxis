@@ -18,8 +18,8 @@ from pprint import pprint
 import flask
 
 PORT = 5001
-SSL_CERT = '/Users/dbazile/code/bf-api/.dev/ssl-certificate.pem'#os.getenv('SSL_CERT')
-SSL_KEY = '/Users/dbazile/code/bf-api/.dev/ssl-certificate.key'#os.getenv('SSL_KEY')
+SSL_CERT = os.getenv('SSL_CERT')
+SSL_KEY = os.getenv('SSL_KEY')
 
 app = flask.Flask(__name__)
 
