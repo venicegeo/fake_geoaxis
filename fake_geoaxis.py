@@ -12,7 +12,6 @@
 # specific language governing permissions and limitations under the License.
 
 import os
-from base64 import b64decode
 from pprint import pprint
 
 import flask
@@ -50,16 +49,12 @@ def authorize_form():
     <body style="background-color: #36c; margin: 5em; font-family: Verdana;">
     <form action="{redirect_uri}" style="position: absolute; top: 5em; left: 5em; right: 5em; bottom: 5em; padding: 4em; background-color: white;">
         <h1 style="font: 100 50px Verdana">fake-geoaxis</h1>
-        <p>state: <input name="state" value="{state}"/> <code style="color: #aaa">({state_decoded})</code></p>
+        <p>state: <input name="state" value="{state}"/></p>
         <p>redirect_uri: <code>{redirect_uri}</code></p>
         <p>code: <input name="code" value="pretendthisisavalidcode" style="font-family: monospace; width: 400px;"/></p>
         <p><button>Authorize login, gogogo!</button></p>
     </form>
-    """.format(
-        state=state,
-        state_decoded=b64decode(state.encode()).decode(),
-        redirect_uri=redirect_uri,
-    )
+    """.format(state=state, redirect_uri=redirect_uri)
 
 
 @app.route('/ms_oauth/oauth2/endpoints/oauthservice/tokens', methods=['POST'])
