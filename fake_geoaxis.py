@@ -11,9 +11,15 @@
 # CONDITIONS OF ANY KIND, either express or implied. See the License for the
 # specific language governing permissions and limitations under the License.
 
+import os
 from base64 import b64decode
 from pprint import pprint
+
 import flask
+
+PORT = 5001
+SSL_CERT = '/Users/dbazile/code/bf-api/.dev/ssl-certificate.pem'#os.getenv('SSL_CERT')
+SSL_KEY = '/Users/dbazile/code/bf-api/.dev/ssl-certificate.key'#os.getenv('SSL_KEY')
 
 app = flask.Flask(__name__)
 
@@ -91,8 +97,12 @@ def get_profile():
         "commonname": "FAKEGEOAXIS",
         "firstname": "FAKEGEOAXIS",
         "personatypecode": "AAA",
-        "uri": "/ms_oauth/resources/userprofile/me/FAKEGEOAXIS"
+        "uri": "/ms_oauth/resources/userprofile/me"
     })
 
 
-app.run(port=5001, debug=True)
+app.run(
+    port=PORT,
+    debug=True,
+    ssl_context=(SSL_CERT, SSL_KEY) if SSL_CERT and SSL_KEY else None,
+)
