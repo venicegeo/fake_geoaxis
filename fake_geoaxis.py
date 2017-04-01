@@ -11,8 +11,9 @@
 # CONDITIONS OF ANY KIND, either express or implied. See the License for the
 # specific language governing permissions and limitations under the License.
 
+import base64
+import hashlib
 import os
-from pprint import pprint
 
 import flask
 
@@ -46,38 +47,41 @@ def authorize_form():
     state = flask.request.args.get('state', '')
     redirect_uri = flask.request.args.get('redirect_uri')
     return """
-    <body style="background-color: #36c; font: 12px Verdana;">
-    <form action="{redirect_uri}" style="position: absolute; top: 10vh; left: 10vh; right: 10vh; bottom: 10vh; padding: 4em; background-color: white; box-shadow: 3px 3px 15px 5px rgba(0,0,0,.1);">
-        <h1 style="font: 100 50px Verdana">fake-geoaxis</h1>
-        <p>state: <input name="state" value="{state}"/></p>
-        <p>redirect_uri: <code>{redirect_uri}</code></p>
-        <p>
-            Simulate Outcome:
-            <div style="margin-left: 2em;">
-                <label><input name="code" checked type="radio" value="{noise}.success.{noise}"/>Success</label><br/>
-                <label><input name="code" type="radio" value="{noise}.raise_bad_code.{noise}"/>Auth Code Already Consumed</label><br/>
-                <label><input name="code" type="radio" value="{noise}.raise_bad_credentials.{noise}"/>Client Credentials Rejected</label><br/>
-                <label><input name="code" type="radio" value="{noise}.raise_bad_redirect_uri.{noise}"/>Redirect URI Rejected</label><br/>
-                <label><input name="code" type="radio" value="{noise}.raise_500.{noise}"/>HTTP 500</label><br/>
-                <label><input name="code" type="radio" value="{noise}.raise_501.{noise}"/>HTTP 501</label><br/>
-                <label><input name="code" type="radio" value="{noise}.raise_502.{noise}"/>HTTP 502</label><br/>
-                <label><input name="code" type="radio" value="{noise}.raise_503.{noise}"/>HTTP 503</label><br/>
-            </div>
-        </p>
-        <p><button>Authorize login, gogogo!</button></p>
-    </form>
+        <form action="{redirect_uri}" style="">
+            <h1>fake-geoaxis</h1>
+            <p>state: <input name="state" value="{state}"/></p>
+            <p>redirect_uri: <code>{redirect_uri}</code></p>
+
+            <h2>Scenarios</h2>
+
+            <h3>Success</h3>
+            <label><input name="code" type="radio" value="{noise}.CAROL_CARTOGRAPHER.{noise}" checked/>Authenticate as Persona 1</label>
+            <label><input name="code" type="radio" value="{noise}.GEORGE_GEOGRAPHER.{noise}"/>Authenticate as Persona 2</label>
+            <label><input name="code" type="radio" value="{noise}.OSCAR_OCEANOGRAPHER.{noise}"/>Authenticate as Persona 3</label>
+
+            <h3>Errors</h3>
+            <label><input name="code" type="radio" value="{noise}.raise_bad_code.{noise}"/>Auth Code Already Consumed</label>
+            <label><input name="code" type="radio" value="{noise}.raise_bad_credentials.{noise}"/>Client Credentials Rejected</label>
+            <label><input name="code" type="radio" value="{noise}.raise_bad_redirect_uri.{noise}"/>Redirect URI Rejected</label>
+            <label><input name="code" type="radio" value="{noise}.raise_500.{noise}"/>HTTP 500</label>
+            <label><input name="code" type="radio" value="{noise}.raise_501.{noise}"/>HTTP 501</label>
+            <label><input name="code" type="radio" value="{noise}.raise_502.{noise}"/>HTTP 502</label>
+            <label><input name="code" type="radio" value="{noise}.raise_503.{noise}"/>HTTP 503</label>
+
+            <p><button>Authorize login, gogogo!</button></p>
+        </form>
+        <style>
+            body {{ background-color: #36c; font: 12px Verdana; }}
+            form {{ position: absolute; top: 10vh; left: 10vh; right: 10vh; bottom: 10vh; padding: 4em; background-color: white; box-shadow: 3px 3px 15px 5px rgba(0,0,0,.1); }}
+            h1 {{ font: 100 50px Verdana; }}
+            label {{ display: block; margin-left: 2em; }}
+        </style>
     """.format(noise='0' * 30, state=state, redirect_uri=redirect_uri)
 
 
 @app.route('/ms_oauth/oauth2/endpoints/oauthservice/tokens', methods=['POST'])
 def issue_token():
-    print('-' * 80)
-    print('HEADERS:')
-    pprint(dict(flask.request.headers))
-    print('BODY:')
-    pprint(flask.request.get_data(as_text=True))
-    print('-' * 80)
-
+    _inspect()
     code = flask.request.form.get('code', '').strip('0').strip('.')  # type: str
     if code.startswith('raise_'):
         code = code[6:]
@@ -93,36 +97,55 @@ def issue_token():
     return flask.jsonify({
         'expires_in': 3600,
         'token_type': 'Bearer',
-        'access_token': 'ACCESS_TOKEN_TIME!',
+        'access_token': base64.b64encode(code.replace('_', ' ').encode()).decode(),
     })
 
 
 @app.route('/ms_oauth/resources/userprofile/me', methods=['GET'])
 def get_profile():
-    print('-' * 80)
-    print('HEADERS:')
-    pprint(dict(flask.request.headers))
-    print('BODY:')
-    pprint(flask.request.get_data(as_text=True))
-    print('-' * 80)
+    _inspect()
+    auth_header = flask.request.headers.get('Authorization', '')
 
-    if flask.request.headers.get('Authorization') != 'Bearer ACCESS_TOKEN_TIME!':
-        return flask.jsonify(error='sorry, bad token'), 401
+    if not auth_header.startswith('Bearer '):
+        return flask.jsonify(error='authentication failed'), 401
+
+    try:
+        full_name = base64.b64decode(auth_header[7:].encode()).decode().title()
+        first_name, last_name = full_name.split()  # type: str, str
+    except Exception as err:
+        print(err)
+        return flask.jsonify(error='token parse failed: {}'.format(err)), 500
 
     return flask.jsonify({
-        "uid": "FAKEGEOAXIS",
-        "mail": "FAKEGEOAXIS@localhost",
-        "username": "FAKEGEOAXIS",
-        "DN": "cn=FAKEGEOAXIS, OU=People, OU=NGA, OU=DoD, O=U.S. Government, C=US",
-        "email": "FAKEGEOAXIS@localhost",
-        "ID": "FAKEGEOAXIS",
-        "lastname": "FAKEGEOAXIS",
-        "login": "FAKEGEOAXIS",
-        "commonname": "FAKEGEOAXIS",
-        "firstname": "FAKEGEOAXIS",
-        "personatypecode": "AAA",
-        "uri": "/ms_oauth/resources/userprofile/me"
+        'uid':             hashlib.sha1(full_name.encode()).hexdigest(),
+
+        'ID':              '{}_{}'.format(first_name, last_name).lower(),
+        'login':           '{}_{}'.format(first_name, last_name).lower(),
+        'username':        '{}_{}'.format(first_name, last_name).lower(),
+
+        'DN':              'cn={}, OU=People, OU=NGA, OU=DoD, O=U.S. Government, C=US'.format(full_name),
+        'commonname':      full_name,
+        'lastname':        last_name,
+        'firstname':       first_name,
+
+        'mail':            '{}{}@localhost'.format(first_name, last_name),
+        'email':           '{}{}@localhost'.format(first_name, last_name),
+        'personatypecode': 'AAA',
+        'uri':             '/ms_oauth/resources/userprofile/me/{}'.format(hashlib.sha1(full_name.encode()).hexdigest()),
     })
+
+
+def _inspect():
+    print('-' * 80)
+    print('HEADERS')
+    print()
+    for key, value in flask.request.headers.items():
+        print('{:<14} : {}'.format(key, value))
+    print()
+    print('BODY')
+    print()
+    print(flask.request.get_data(as_text=True))
+    print('-' * 80)
 
 
 app.run(
