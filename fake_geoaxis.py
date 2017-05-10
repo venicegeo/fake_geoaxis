@@ -17,6 +17,7 @@ import os
 
 import flask
 
+HOST = os.getenv('HOST', None)
 PORT = int(os.getenv('PORT', 5001))
 SSL_CERT = os.getenv('SSL_CERT')
 SSL_KEY = os.getenv('SSL_KEY')
@@ -149,6 +150,7 @@ def _inspect():
 
 
 app.run(
+    host=HOST,
     port=PORT,
     debug=True,
     ssl_context=(SSL_CERT, SSL_KEY) if SSL_CERT and SSL_KEY else None,
