@@ -1,0 +1,11 @@
+applications:
+- name: fake-geoaxis
+  host: fake-geoaxis
+  domain: dev.geointservices.io
+  buildpack: python_buildpack
+  memory: 256M
+  instances: 1
+  timeout: 80
+  health-check-type: none
+  env:
+    PORT: 80
