@@ -94,6 +94,8 @@ def issue_token():
         elif code == 'bad_redirect_uri':
             return flask.jsonify(error='invalid_client', error_description='redirect_uri parameter value is invalid'), 401
         return flask.jsonify(error='oh no'), int(code) if code.isdigit() else 500
+    elif not code:
+        return flask.jsonify(error='invalid_request', error_description='Server received an unrecognized request'), 400
 
     return flask.jsonify({
         'expires_in': 3600,
